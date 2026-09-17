@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ethers } from "ethers";
 import { useWallet } from "../context/WalletContext";
 import { getProvider, getContracts, ATTESTATION_STATUS, deployedAddresses } from "../lib/contracts";
 import { verifyPresentationSignature } from "../lib/merkleCredential";
