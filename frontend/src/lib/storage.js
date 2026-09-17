@@ -31,3 +31,42 @@ export function getVoteSecret(disputeId, jurorAddress) {
   const raw = localStorage.getItem(key);
   return raw ? JSON.parse(raw) : null;
 }
+
+const PRESENTATION_KEY = "veriref:latest_presentation";
+
+export function saveLatestPresentation(presentationBundle) {
+  try {
+    localStorage.setItem(PRESENTATION_KEY, JSON.stringify(presentationBundle));
+  } catch (err) {
+    console.warn("Failed to save latest presentation:", err);
+  }
+}
+
+export function getLatestPresentation() {
+  try {
+    const raw = localStorage.getItem(PRESENTATION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAllStoredCredentials() {
+  const all = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(CRED_PREFIX)) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) all.push(...parsed);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to retrieve all stored credentials:", err);
+  }
+  return all;
+}
+

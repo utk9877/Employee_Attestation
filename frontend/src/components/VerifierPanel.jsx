@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { getProvider, getContracts, ATTESTATION_STATUS, deployedAddresses } from "../lib/contracts";
 import { verifyPresentationSignature } from "../lib/merkleCredential";
+import { getLatestPresentation } from "../lib/storage";
 import CopyButton from "./CopyButton";
 
 export default function VerifierPanel() {
@@ -155,7 +156,22 @@ export default function VerifierPanel() {
       </p>
 
       <section className="card">
-        <h3>Input Credential or Verifiable Presentation</h3>
+        <div className="card-header">
+          <h3>Input Credential or Verifiable Presentation</h3>
+          {getLatestPresentation() && (
+            <button
+              className="link font-highlight"
+              onClick={() => {
+                const latest = getLatestPresentation();
+                const str = JSON.stringify(latest, null, 2);
+                setBundleText(str);
+                handleVerifyText(str);
+              }}
+            >
+              ⚡ Auto-Fill Latest Presentation from Employee Tab
+            </button>
+          )}
+        </div>
         <textarea
           rows={6}
           value={bundleText}

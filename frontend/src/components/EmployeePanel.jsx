@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { useWallet } from "../context/WalletContext";
 import { rebuildTree, buildDisclosure, signVerifiablePresentation } from "../lib/merkleCredential";
-import { saveCredential, getCredentials } from "../lib/storage";
+import { saveCredential, getCredentials, saveLatestPresentation, getAllStoredCredentials } from "../lib/storage";
 import { decryptVaultPayload, getDefaultVaultKey } from "../lib/cryptoVault";
 import { deployedAddresses } from "../lib/contracts";
 import CopyButton from "./CopyButton";
@@ -155,6 +155,7 @@ export default function EmployeePanel() {
       };
 
       setPresentationOutput((prev) => ({ ...prev, [record.attestationId]: vpBundle }));
+      saveLatestPresentation(vpBundle);
       setLog(`Verifiable Presentation generated for attestation #${record.attestationId}!`);
     } catch (e) {
       setLog("Error generating VP: " + (e.shortMessage || e.message));
@@ -164,6 +165,8 @@ export default function EmployeePanel() {
   }
 
   if (!address) return <p className="hint">Connect your MetaMask wallet to manage your credentials.</p>;
+
+  const allStored = getAllStoredCredentials();
 
   return (
     <div className="panel">
@@ -223,10 +226,26 @@ export default function EmployeePanel() {
 
       {activeTab === "portfolio" && credentials.length === 0 && (
         <section className="card empty-state">
-          <p>No credentials found for this wallet yet.</p>
-          <p className="hint">
-            Once an employer issues an attestation to your address (<code>{address}</code>), click <strong>Refresh On-Chain Vault</strong> above or paste a credential blob manually.
+          <p>
+            No credentials found for currently connected account: <code>{address}</code>.
           </p>
+          <p className="hint">
+            Tip: If you switched accounts in MetaMask (e.g. to a Juror or Verifier account), switch back to the Employee account to view its credentials.
+          </p>
+          {allStored.length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <p className="hint">
+                Found {allStored.length} credential(s) previously saved on this browser from other accounts:
+              </p>
+              <button
+                className="link font-highlight"
+                style={{ fontSize: "0.95rem" }}
+                onClick={() => setCredentials(allStored)}
+              >
+                📂 Load All {allStored.length} Local Browser Credential(s)
+              </button>
+            </div>
+          )}
         </section>
       )}
 
