@@ -219,3 +219,264 @@ code {
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
 }
+
+/* Enhanced UI additions */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.section-subtitle {
+  margin: 0.8rem 0 0.4rem;
+  font-size: 0.95rem;
+  color: #ccd6e6;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.stat-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.font-highlight {
+  color: #f7b731;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  background: rgba(76, 175, 125, 0.2);
+  color: #4caf7d;
+  border: 1px solid rgba(76, 175, 125, 0.4);
+}
+
+.badge-warn {
+  background: rgba(217, 164, 65, 0.2);
+  color: #e5ad35;
+  border: 1px solid rgba(217, 164, 65, 0.4);
+}
+
+.badge-danger {
+  background: rgba(226, 86, 79, 0.2);
+  color: #ef5b54;
+  border: 1px solid rgba(226, 86, 79, 0.4);
+}
+
+.badge-info {
+  background: rgba(91, 141, 239, 0.2);
+  color: #709df5;
+  border: 1px solid rgba(91, 141, 239, 0.4);
+}
+
+/* Subtabs */
+.subtabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+
+.subtab {
+  background: none;
+  color: var(--muted);
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+.subtab.active {
+  background: rgba(91, 141, 239, 0.15);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.subtab-action {
+  margin-left: auto;
+}
+
+/* Form extras */
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.6rem 0;
+  align-items: flex-end;
+}
+
+.form-row input, .form-row select {
+  margin-top: 0;
+}
+
+.feature-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1rem 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin-top: 0.2rem;
+  cursor: pointer;
+}
+
+.predicate-tag {
+  display: inline-block;
+  background: rgba(91, 141, 239, 0.1);
+  border: 1px solid rgba(91, 141, 239, 0.25);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #b0c9fc;
+}
+
+.success-banner {
+  background: rgba(76, 175, 125, 0.15);
+  border: 1px solid var(--ok);
+  color: #7de8ab;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.accent-btn {
+  background: #38805a;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.danger-btn {
+  background: #b83d37;
+  color: #ffffff;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.inline-revoke-box {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.inline-revoke-box input {
+  padding: 0.3rem;
+  font-size: 0.8rem;
+  width: 180px;
+  margin-top: 0;
+}
+
+/* Verification boxes */
+.verification-status-box {
+  padding: 0.85rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.verification-status-box.success {
+  background: rgba(76, 175, 125, 0.12);
+  border: 1px solid rgba(76, 175, 125, 0.4);
+}
+
+.verification-status-box.failure {
+  background: rgba(226, 86, 79, 0.15);
+  border: 1px solid rgba(226, 86, 79, 0.5);
+  color: #f77a74;
+}
+
+.verification-status-box.notice {
+  background: rgba(91, 141, 239, 0.1);
+  border: 1px solid rgba(91, 141, 239, 0.3);
+}
+
+.status-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.output-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem;
+}
+
+.presentation-result-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(76, 175, 125, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.d-block {
+  display: block;
+}
+
+.small {
+  font-size: 0.75rem;
+}
+
+.warn-text {
+  color: var(--warn);
+}
+

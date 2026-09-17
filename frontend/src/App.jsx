@@ -5,6 +5,7 @@ import AttesterPanel from "./components/AttesterPanel";
 import EmployeePanel from "./components/EmployeePanel";
 import VerifierPanel from "./components/VerifierPanel";
 import DisputesPanel from "./components/DisputesPanel";
+import LeaderboardPanel from "./components/LeaderboardPanel";
 import "./App.css";
 
 const TABS = [
@@ -12,6 +13,7 @@ const TABS = [
   { id: "employee", label: "Employee", Component: EmployeePanel },
   { id: "verifier", label: "Verifier", Component: VerifierPanel },
   { id: "disputes", label: "Disputes", Component: DisputesPanel },
+  { id: "leaderboard", label: "Directory & Trust", Component: LeaderboardPanel },
 ];
 
 function shorten(addr) {

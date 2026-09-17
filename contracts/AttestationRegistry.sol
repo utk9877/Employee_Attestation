@@ -7,14 +7,9 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "./AttesterRegistry.sol";
 
 /// @title AttestationRegistry
-/// @notice Anchors employment attestations as Merkle roots. The full credential
-///         (employer, role, dates, rating, ...) never touches the chain — only a
-///         commitment to it does. Holders later prove individual fields via
-///         Merkle proofs without revealing the rest of the record (see
-///         verifyDisclosure). Only addresses registered in AttesterRegistry may
-///         issue attestations, and the attester must have signed the root
-///         themselves, so an attestation can always be tied back to a staked,
-///         accountable identity.
+/// @notice Anchors employment attestations as Merkle roots with full credential
+///         lifecycle management (issuance, optional expiry, voluntary employer
+///         revocation, on-chain encrypted vaulting, and query indexing).
 contract AttestationRegistry {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
@@ -32,6 +27,9 @@ contract AttestationRegistry {
         bytes signature; // attester's signature over merkleRoot
         uint256 issuedAt;
         Status status;
+        uint256 validUntil; // 0 = never expires, otherwise unix timestamp
+        bool revokedByAttester;
+        string revocationReason;
     }
 
     AttesterRegistry public immutable attesterRegistry;
@@ -43,6 +41,10 @@ contract AttestationRegistry {
     uint256 public nextAttestationId;
     mapping(uint256 => Attestation) public attestations;
 
+    // Fast query indexes for subject and attester portfolios
+    mapping(address => uint256[]) private _subjectAttestations;
+    mapping(address => uint256[]) private _attesterAttestations;
+
     event AttestationIssued(
         uint256 indexed attestationId,
         address indexed attester,
@@ -50,6 +52,13 @@ contract AttestationRegistry {
         bytes32 merkleRoot
     );
     event AttestationStatusChanged(uint256 indexed attestationId, Status newStatus);
+    event AttestationRevokedByAttester(uint256 indexed attestationId, address indexed attester, string reason);
+    event CredentialVaulted(
+        uint256 indexed attestationId,
+        address indexed subject,
+        address indexed attester,
+        string encryptedPayload
+    );
     event DisputeResolverUpdated(address indexed newResolver);
 
     modifier onlyDisputeResolver() {
@@ -71,16 +80,38 @@ contract AttestationRegistry {
         emit DisputeResolverUpdated(_resolver);
     }
 
-    /// @notice Issue a new attestation. `signature` must be the attester's ECDSA
-    ///         signature over the EIP-191-prefixed `merkleRoot`, proving the
-    ///         registered attester (not merely whoever sent the tx) authored it.
+    /// @notice Backward-compatible issuance without explicit expiry or vault payload.
     function issueAttestation(
         address subject,
         bytes32 merkleRoot,
         bytes calldata signature
     ) external returns (uint256 attestationId) {
+        return _issueAttestation(subject, merkleRoot, signature, 0, "");
+    }
+
+    /// @notice Full lifecycle issuance with optional expiration timestamp and encrypted vault payload.
+    function issueAttestationWithLifecycle(
+        address subject,
+        bytes32 merkleRoot,
+        bytes calldata signature,
+        uint256 validUntil,
+        string calldata encryptedPayload
+    ) external returns (uint256 attestationId) {
+        return _issueAttestation(subject, merkleRoot, signature, validUntil, encryptedPayload);
+    }
+
+    function _issueAttestation(
+        address subject,
+        bytes32 merkleRoot,
+        bytes calldata signature,
+        uint256 validUntil,
+        string memory encryptedPayload
+    ) internal returns (uint256 attestationId) {
         require(attesterRegistry.isRegistered(msg.sender), "AttestationRegistry: attester not registered");
         require(subject != address(0), "AttestationRegistry: zero subject");
+        if (validUntil > 0) {
+            require(validUntil > block.timestamp, "AttestationRegistry: expiry must be in the future");
+        }
 
         address recovered = merkleRoot.toEthSignedMessageHash().recover(signature);
         require(recovered == msg.sender, "AttestationRegistry: signature does not match attester");
@@ -92,15 +123,49 @@ contract AttestationRegistry {
             merkleRoot: merkleRoot,
             signature: signature,
             issuedAt: block.timestamp,
-            status: Status.Active
+            status: Status.Active,
+            validUntil: validUntil,
+            revokedByAttester: false,
+            revocationReason: ""
         });
 
+        _subjectAttestations[subject].push(attestationId);
+        _attesterAttestations[msg.sender].push(attestationId);
+
         emit AttestationIssued(attestationId, msg.sender, subject, merkleRoot);
+
+        if (bytes(encryptedPayload).length > 0) {
+            emit CredentialVaulted(attestationId, subject, msg.sender, encryptedPayload);
+        }
     }
 
-    /// @notice Verify a selective-disclosure proof: does `leaf` belong to the
-    ///         Merkle tree committed to by this attestation? The verifier learns
-    ///         nothing about any other field in the underlying credential.
+    /// @notice Voluntary revocation by the issuing employer.
+    function revokeAttestation(uint256 attestationId, string calldata reason) external {
+        Attestation storage a = attestations[attestationId];
+        require(a.attester != address(0), "AttestationRegistry: unknown attestation");
+        require(msg.sender == a.attester, "AttestationRegistry: only issuing attester can revoke");
+        require(a.status == Status.Active, "AttestationRegistry: attestation not active");
+        require(!a.revokedByAttester, "AttestationRegistry: already revoked");
+
+        a.revokedByAttester = true;
+        a.revocationReason = reason;
+        a.status = Status.Revoked;
+
+        emit AttestationRevokedByAttester(attestationId, msg.sender, reason);
+        emit AttestationStatusChanged(attestationId, Status.Revoked);
+    }
+
+    /// @notice Comprehensive validity check: active status, not revoked, and not expired.
+    function isAttestationValid(uint256 attestationId) public view returns (bool) {
+        Attestation storage a = attestations[attestationId];
+        if (a.attester == address(0)) return false;
+        if (a.status != Status.Active) return false;
+        if (a.revokedByAttester) return false;
+        if (a.validUntil > 0 && block.timestamp >= a.validUntil) return false;
+        return true;
+    }
+
+    /// @notice Verify a selective-disclosure proof against the anchored Merkle root.
     function verifyDisclosure(
         uint256 attestationId,
         bytes32 leaf,
@@ -121,4 +186,13 @@ contract AttestationRegistry {
     function getAttestation(uint256 attestationId) external view returns (Attestation memory) {
         return attestations[attestationId];
     }
+
+    function getSubjectAttestations(address subject) external view returns (uint256[] memory) {
+        return _subjectAttestations[subject];
+    }
+
+    function getAttesterAttestations(address attester) external view returns (uint256[] memory) {
+        return _attesterAttestations[attester];
+    }
 }
+
