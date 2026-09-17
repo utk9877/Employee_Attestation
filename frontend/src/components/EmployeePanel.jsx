@@ -42,11 +42,14 @@ export default function EmployeePanel() {
     }
   }
 
-  async function handleAutoSync() {
+  async function handleAutoSync(forceClean = false) {
     if (!contracts || !address) return;
     setBusy(true);
     setLog("Scanning blockchain for encrypted credentials issued to your wallet...");
     try {
+      if (forceClean) {
+        localStorage.removeItem("veriref:credentials:" + address.toLowerCase());
+      }
       const filter = contracts.attestationRegistry.filters.CredentialVaulted(null, address);
       const events = await contracts.attestationRegistry.queryFilter(filter);
       const defaultKey = getDefaultVaultKey(address);
@@ -255,6 +258,10 @@ export default function EmployeePanel() {
           const predicateFields = record.fields.filter((f) => f.fieldName.startsWith("predicate:"));
           const vpBundle = presentationOutput[record.attestationId];
 
+          const localRoot = rebuildTree(record.fields).getHexRoot();
+          const rootMatches = localRoot.toLowerCase() === record.root.toLowerCase();
+          const isOwner = record.subject && record.subject.toLowerCase() === address.toLowerCase();
+
           return (
             <section className="card credential-card" key={record.attestationId}>
               <div className="card-header">
@@ -262,6 +269,11 @@ export default function EmployeePanel() {
                   <h3>Attestation #{record.attestationId}</h3>
                   <span className="hint">
                     Employer: <code>{record.attester?.slice(0, 8)}...{record.attester?.slice(-6)}</code>
+                    {record.subject && (
+                      <span style={{ marginLeft: "8px" }}>
+                        Subject: <code>{record.subject.slice(0, 8)}...{record.subject.slice(-6)}</code>
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="quick-actions">
@@ -275,6 +287,24 @@ export default function EmployeePanel() {
                   )}
                 </div>
               </div>
+
+              {!isOwner && (
+                <div className="banner warn" style={{ margin: "8px 0" }}>
+                  <strong>⚠️ Subject Mismatch:</strong> This credential was issued on-chain to{" "}
+                  <code>{record.subject}</code>, but your connected wallet is <code>{address}</code>.
+                  Signing a presentation with this account will fail verification.
+                </div>
+              )}
+
+              {!rootMatches && (
+                <div className="banner warn" style={{ margin: "8px 0" }}>
+                  <strong>⚠️ Local Fields Mismatch:</strong> These fields generate root <code>{localRoot.slice(0, 10)}...</code>, but the on-chain root is <code>{record.root.slice(0, 10)}...</code>.
+                  Proofs will be invalid.{" "}
+                  <button className="link" onClick={() => handleAutoSync(true)}>
+                    Click here to clean &amp; re-sync from blockchain
+                  </button>
+                </div>
+              )}
 
               {/* Standard Attributes */}
               <h4 className="section-subtitle">Direct Attributes</h4>
